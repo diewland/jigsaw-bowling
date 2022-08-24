@@ -1,6 +1,7 @@
 from PIL import Image
 from pprint import pprint as pp
 from random import random
+from os.path import exists
 
 # test shuffle
 DEBUG = False
@@ -26,6 +27,7 @@ LAYER_2 = [
     ("3_1.png", 0.8),
     ("3_2.png", 1.0),
     ("3_3.png", 1.0),
+    ("3_4.png", 0.5),
 ]
 LAYER_3 = [
     ("4_1.png", 1.0),
@@ -33,20 +35,28 @@ LAYER_3 = [
 
 # save image
 def craft(out):
-    print('crafting...', out)
+    outpath = "{}/{}".format(DIR_OUTPUT, out)
+    print('crafting...', outpath)
     if DEBUG: return
 
-    (l0, l1, l2, l3) = list(out.split('.')[0])
+    # skip existing file
+    if exists(outpath):
+        return
 
-    img_l0 = Image.open("{}/1_{}.png".format(DIR_INPUT, l0))
-    img_l1 = Image.open("{}/2_{}.png".format(DIR_INPUT, l1))
-    img_l2 = Image.open("{}/3_{}.png".format(DIR_INPUT, l2))
-    img_l3 = Image.open("{}/4_{}.png".format(DIR_INPUT, l3))
-    layers = [ img_l1, img_l2, img_l3 ]
+    (l0, l1, l2, l3) = list(out.split('.')[0])
+    layers = [
+        Image.open("{}/1_{}.png".format(DIR_INPUT, l0)),
+        Image.open("{}/2_{}.png".format(DIR_INPUT, l1)),
+        Image.open("{}/3_{}.png".format(DIR_INPUT, l2)),
+        Image.open("{}/4_{}.png".format(DIR_INPUT, l3)),
+    ]
+    new_img = Image.new("RGBA", layers[0].size)
 
     for layer in layers:
-        img_l0.paste(layer, (0, 0), layer.convert('RGBA'))
-    img_l0.save("{}/{}".format(DIR_OUTPUT, out), "PNG")
+        #new_img.paste(layer, (0, 0), layer.convert('RGBA')) --- not good border
+        #new_img.paste(layer, (0, 0), layer.convert('RGBa')) --- overlay bug
+        new_img = Image.alpha_composite(new_img, layer)    # --- perfect!
+    new_img.save(outpath, "PNG")
 
 # loop
 for l0 in LAYER_0:
